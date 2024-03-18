@@ -1,0 +1,176 @@
+[gd_scene load_steps=7 format=3 uid="uid://dsnxyyq8ky2j2"]
+
+[ext_resource type="PackedScene" uid="uid://dk33k7ggjvndg" path="res://scenes/snake_segment.tscn" id="1_n3rj5"]
+[ext_resource type="Texture2D" uid="uid://bj2ambwei5ogi" path="res://assets/bg.png" id="2_2cw17"]
+[ext_resource type="PackedScene" uid="uid://fykyaojne5lh" path="res://scenes/hud.tscn" id="3_5rg2o"]
+[ext_resource type="Texture2D" uid="uid://dxyvfago0gd5f" path="res://assets/apple.png" id="4_mubik"]
+[ext_resource type="PackedScene" uid="uid://dluj7vj5kx82v" path="res://scenes/game_over_menu.tscn" id="5_iegdb"]
+
+[sub_resource type="GDScript" id="GDScript_ghs8x"]
+script/source = "extends Node
+
+@export var snake_scene : PackedScene
+
+var gameScore : int
+var gameStarted : bool = false
+
+#grid Variables
+var cells : int = 20
+var cellSize : int = 50
+
+#food variables
+var foodPosition : Vector2
+var spawnNewFood : bool = true
+#snake Variables
+var oldData : Array
+var snakeData : Array
+var snake : Array
+
+#movement Variables
+var startPosition = Vector2(9,9)
+var up = Vector2(0,-1)
+var down = Vector2(0,1)
+var left = Vector2(-1, 0)
+var right = Vector2(1,0)
+var currentDirection : Vector2
+var canSnakeMove : bool
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	newGame()
+
+
+func newGame():
+	get_tree().paused = false
+	get_tree().call_group(\"segments\", \"queue_free\")
+	$GameOverMenu.hide()
+	gameScore = 0
+	changeScoreBasedOnGameScore()
+	currentDirection = up
+	canSnakeMove = true
+	generateSnake()
+	placeFood()
+	
+func generateSnake():
+	oldData.clear()
+	snakeData.clear()
+	snake.clear()
+	for segmentPosition in range(3):
+		generateTailSegment(startPosition + Vector2(0, segmentPosition))
+	
+func generateTailSegment(segmentPosition):
+	snakeData.append(segmentPosition)
+	var SnakeSegment = snake_scene.instantiate()
+	SnakeSegment.position = (segmentPosition * cellSize) + Vector2(0, cellSize)
+	add_child(SnakeSegment)
+	snake.append(SnakeSegment)
+	
+	
+	
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	moveSnake()
+	
+	
+func moveSnake():
+	if canSnakeMove:
+		if Input.is_action_just_pressed(\"move_down\") and currentDirection != up:
+			currentDirection = down
+			isGameRunning()
+		if Input.is_action_just_pressed(\"move_up\") and currentDirection != down:
+			currentDirection = up
+			isGameRunning()
+		if Input.is_action_just_pressed(\"move_left\") and currentDirection != right:
+			currentDirection = left
+			isGameRunning()
+		if Input.is_action_just_pressed(\"move_right\") and currentDirection != left:
+			currentDirection = right
+			isGameRunning()
+
+func isGameRunning():
+	canSnakeMove = false
+	if not gameStarted:
+		startGame()
+
+func startGame():
+	gameStarted = true
+	$MoveTimer.start()
+	
+func endGame():
+	$GameOverMenu.show()
+	$MoveTimer.stop()
+	gameStarted = false
+	get_tree().paused = true
+
+func _on_move_timer_timeout():
+	canSnakeMove = true
+	oldData = [] + snakeData
+	snakeData[0] += currentDirection
+	moveRestOfSnakesBody()
+
+
+func moveRestOfSnakesBody():
+	for snakeSegment in range(len(snakeData)):
+		if snakeSegment > 0:
+			snakeData[snakeSegment] = oldData[snakeSegment - 1]
+		snake[snakeSegment].position = (snakeData[snakeSegment] * cellSize) + Vector2(0, cellSize)
+	checkOutOfBounds()
+	checkIfSnakeSelfEats()
+	checkIfSnakeEatsFood()
+		
+func placeFood():
+	while spawnNewFood:
+		spawnNewFood = false
+		foodPosition = Vector2(randi_range(0, cells - 1), randi_range(0, cells - 1))
+		for snakeSegment in snakeData:
+			if foodPosition == snakeSegment:
+				spawnNewFood = true
+	$Food.position = (foodPosition * cellSize) + Vector2(0, cellSize)
+	spawnNewFood = true
+		
+func checkIfSnakeEatsFood():
+	if snakeData[0] == foodPosition:
+		gameScore += 1
+		changeScoreBasedOnGameScore()
+		generateTailSegment(oldData[-1])
+		placeFood()
+		
+func checkOutOfBounds():
+	if snakeData[0].x < 0 or snakeData[0].x > cells - 1 or snakeData[0].y < 0 or snakeData[0].y > cells - 1:
+		endGame()
+		
+func checkIfSnakeSelfEats():
+	for snakeSegment in range(1, len(snakeData)):
+		if snakeData[0] == snakeData[snakeSegment]:
+			endGame()
+
+func changeScoreBasedOnGameScore():
+	$Hud.get_node(\"ScoreLabel\").text = \"SCORE: \" + str(gameScore)
+
+
+func _on_game_over_menu_restart():
+	newGame()
+"
+
+[node name="Main" type="Node"]
+script = SubResource("GDScript_ghs8x")
+snake_scene = ExtResource("1_n3rj5")
+
+[node name="Background" type="Sprite2D" parent="."]
+texture = ExtResource("2_2cw17")
+offset = Vector2(500, 550)
+
+[node name="Hud" parent="." instance=ExtResource("3_5rg2o")]
+
+[node name="MoveTimer" type="Timer" parent="."]
+wait_time = 0.1
+
+[node name="Food" type="Sprite2D" parent="."]
+texture = ExtResource("4_mubik")
+offset = Vector2(25, 25)
+
+[node name="GameOverMenu" parent="." instance=ExtResource("5_iegdb")]
+process_mode = 2
+
+[connection signal="timeout" from="MoveTimer" to="." method="_on_move_timer_timeout"]
+[connection signal="restart" from="GameOverMenu" to="." method="_on_game_over_menu_restart"]
