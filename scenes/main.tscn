@@ -15,8 +15,8 @@ var gameScore : int
 var gameStarted : bool = false
 
 #grid Variables
-var cells : int = 20
-var cellSize : int = 50
+const CELLS : int = 20
+const CELLS_SIZE : int = 50
 
 #food variables
 var foodPosition : Vector2
@@ -27,11 +27,12 @@ var snakeData : Array
 var snake : Array
 
 #movement Variables
-var startPosition = Vector2(9,9)
-var up = Vector2(0,-1)
-var down = Vector2(0,1)
-var left = Vector2(-1, 0)
-var right = Vector2(1,0)
+const START_POSITION = Vector2(9,9)
+const DIRECTION_UP = Vector2(0,-1)
+const DIRECTION_DOWN = Vector2(0,1)
+const DIRECTION_LEFT = Vector2(-1, 0)
+const DIRECTION_RIGHT = Vector2(1,0)
+
 var currentDirection : Vector2
 var canSnakeMove : bool
 
@@ -46,7 +47,7 @@ func newGame():
 	$GameOverMenu.hide()
 	gameScore = 0
 	changeScoreBasedOnGameScore()
-	currentDirection = up
+	currentDirection = DIRECTION_UP
 	canSnakeMove = true
 	generateSnake()
 	placeFood()
@@ -56,12 +57,12 @@ func generateSnake():
 	snakeData.clear()
 	snake.clear()
 	for segmentPosition in range(3):
-		generateTailSegment(startPosition + Vector2(0, segmentPosition))
+		generateTailSegment(START_POSITION + Vector2(0, segmentPosition))
 	
 func generateTailSegment(segmentPosition):
 	snakeData.append(segmentPosition)
 	var SnakeSegment = snake_scene.instantiate()
-	SnakeSegment.position = (segmentPosition * cellSize) + Vector2(0, cellSize)
+	SnakeSegment.position = (segmentPosition * CELLS_SIZE) + Vector2(0, CELLS_SIZE)
 	add_child(SnakeSegment)
 	snake.append(SnakeSegment)
 	
@@ -74,17 +75,17 @@ func _process(delta):
 	
 func moveSnake():
 	if canSnakeMove:
-		if Input.is_action_just_pressed(\"move_down\") and currentDirection != up:
-			currentDirection = down
+		if Input.is_action_just_pressed(\"move_down\") and currentDirection != DIRECTION_UP:
+			currentDirection = DIRECTION_DOWN
 			isGameRunning()
-		if Input.is_action_just_pressed(\"move_up\") and currentDirection != down:
-			currentDirection = up
+		if Input.is_action_just_pressed(\"move_up\") and currentDirection != DIRECTION_DOWN:
+			currentDirection = DIRECTION_UP
 			isGameRunning()
-		if Input.is_action_just_pressed(\"move_left\") and currentDirection != right:
-			currentDirection = left
+		if Input.is_action_just_pressed(\"move_left\") and currentDirection != DIRECTION_RIGHT:
+			currentDirection = DIRECTION_LEFT
 			isGameRunning()
-		if Input.is_action_just_pressed(\"move_right\") and currentDirection != left:
-			currentDirection = right
+		if Input.is_action_just_pressed(\"move_right\") and currentDirection != DIRECTION_LEFT:
+			currentDirection = DIRECTION_RIGHT
 			isGameRunning()
 
 func isGameRunning():
@@ -113,7 +114,7 @@ func moveRestOfSnakesBody():
 	for snakeSegment in range(len(snakeData)):
 		if snakeSegment > 0:
 			snakeData[snakeSegment] = oldData[snakeSegment - 1]
-		snake[snakeSegment].position = (snakeData[snakeSegment] * cellSize) + Vector2(0, cellSize)
+		snake[snakeSegment].position = (snakeData[snakeSegment] * CELLS_SIZE) + Vector2(0, CELLS_SIZE)
 	checkOutOfBounds()
 	checkIfSnakeSelfEats()
 	checkIfSnakeEatsFood()
@@ -121,11 +122,11 @@ func moveRestOfSnakesBody():
 func placeFood():
 	while spawnNewFood:
 		spawnNewFood = false
-		foodPosition = Vector2(randi_range(0, cells - 1), randi_range(0, cells - 1))
+		foodPosition = Vector2(randi_range(0, CELLS - 1), randi_range(0, CELLS - 1))
 		for snakeSegment in snakeData:
 			if foodPosition == snakeSegment:
 				spawnNewFood = true
-	$Food.position = (foodPosition * cellSize) + Vector2(0, cellSize)
+	$Food.position = (foodPosition * CELLS_SIZE) + Vector2(0, CELLS_SIZE)
 	spawnNewFood = true
 		
 func checkIfSnakeEatsFood():
@@ -136,7 +137,7 @@ func checkIfSnakeEatsFood():
 		placeFood()
 		
 func checkOutOfBounds():
-	if snakeData[0].x < 0 or snakeData[0].x > cells - 1 or snakeData[0].y < 0 or snakeData[0].y > cells - 1:
+	if snakeData[0].x < 0 or snakeData[0].x > CELLS - 1 or snakeData[0].y < 0 or snakeData[0].y > CELLS - 1:
 		endGame()
 		
 func checkIfSnakeSelfEats():
