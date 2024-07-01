@@ -45,6 +45,9 @@ func newGame():
 	get_tree().paused = false
 	get_tree().call_group(\"segments\", \"queue_free\")
 	$GameOverMenu.hide()
+	gameSetup()
+	
+func gameSetup():
 	gameScore = 0
 	changeScoreBasedOnGameScore()
 	currentDirection = DIRECTION_UP
@@ -52,12 +55,17 @@ func newGame():
 	generateSnake()
 	placeFood()
 	
+	
 func generateSnake():
+	clearSnakeData()
+	for segmentPosition in range(3):
+		generateTailSegment(START_POSITION + Vector2(0, segmentPosition))
+		
+func clearSnakeData():
 	oldData.clear()
 	snakeData.clear()
 	snake.clear()
-	for segmentPosition in range(3):
-		generateTailSegment(START_POSITION + Vector2(0, segmentPosition))
+	
 	
 func generateTailSegment(segmentPosition):
 	snakeData.append(segmentPosition)
